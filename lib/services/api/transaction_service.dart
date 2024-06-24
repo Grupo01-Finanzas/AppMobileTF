@@ -9,6 +9,7 @@ class TransactionService {
       required double amount,
       required String description,
       required String paymentMethod,
+      required String confirmationCode,
       required String accessToken}) async {
     final url = Uri.parse('$baseUrl/transactions');
     final body = jsonEncode({
@@ -17,6 +18,7 @@ class TransactionService {
       'amount': amount,
       'description': description,
       'payment_method': paymentMethod,
+      'confirmation_code': confirmationCode,
     });
 
     final response = await http.post(url, body: body, headers: {

@@ -29,4 +29,22 @@ class TransactionCubit extends Cubit<TransactionState> {
       emit(TransactionError(message: e.toString()));
     }
   }
+
+   Future<void> fetchTransactionsId(int userId) async { // Now accepts userId
+    emit(TransactionLoading());
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final accessToken = prefs.getString('accessToken');
+
+      if (accessToken != null) {
+        final transactions =
+            await transactionRepository.getTransactions(userId, accessToken);
+        emit(TransactionLoaded(transactions: transactions));
+      } else {
+        emit(const TransactionError(message: 'Access token not found'));
+      }
+    } catch (e) {
+      emit(TransactionError(message: e.toString()));
+    }
+  }
 }

@@ -20,6 +20,7 @@ import 'package:tf/presentation/pages/Admin/product_detail_page.dart';
 import 'package:tf/presentation/pages/Admin/product_edit_page.dart';
 import 'package:tf/presentation/pages/Auth/login_screen.dart';
 import 'package:tf/presentation/pages/Auth/register_screen.dart';
+import 'package:tf/presentation/pages/Client/client_pay_debt_screen.dart';
 import 'package:tf/presentation/pages/Home/home_screen.dart';
 import 'package:tf/presentation/pages/admin/admin_credit_accounts_screen.dart';
 import 'package:tf/presentation/pages/admin/admin_debt_summary_page.dart';
@@ -244,6 +245,30 @@ final appRouter = GoRouter(
     GoRoute(path: '/editAdminProfile', builder: (context, state) {
       return const EditAdminProfilePage();
     }),
+    GoRoute(
+      path: '/clientTransactions',
+      builder: (context, state) {
+        return const ClientTransactionsHistoryScreen();
+      },
+    ),
+    GoRoute(
+      path: '/clientInstallments',
+      builder: (context, state) {
+        return const ClientInstallmentsScreen();
+      },
+    ),
+    GoRoute(
+      path: '/clientAccountSummary',
+      builder: (context, state) {
+        return const ClientAccountSummaryScreen();
+      },
+    ),
+    GoRoute(
+      path: '/clientPayDebt',
+      builder: (context, state) {
+        return const ClientPayDebtScreen();
+      },
+    ),
   ],
   errorBuilder: (context, state) => Scaffold(
     appBar: AppBar(
