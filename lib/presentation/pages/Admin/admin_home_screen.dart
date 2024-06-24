@@ -4,9 +4,10 @@ import 'package:tf/presentation/pages/Admin/admin_home_page.dart';
 import 'package:tf/presentation/pages/Admin/admin_products_page.dart';
 import 'package:tf/presentation/pages/Admin/admin_settings_page.dart';
 
-
 class AdminHomeScreen extends StatefulWidget {
   final int establishmentId;
+  final String baseUrl =
+      'https://si642-2401-ss82-group1-tf-production.up.railway.app/api/v1';
 
   const AdminHomeScreen({super.key, required this.establishmentId});
 
@@ -15,14 +16,12 @@ class AdminHomeScreen extends StatefulWidget {
 }
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
-  int _selectedIndex = 0;
+  @override
+  void initState() {
+    super.initState();
+  }
 
-  static const List<Widget> _widgetOptions = <Widget>[
-    AdminHomePage(),
-    AdminDebtSummaryPage(),
-    AdminProductsPage(),
-    AdminSettingsPage(),
-  ];
+  int _selectedIndex = 0;
 
   void _onItemTapped(int index) {
     setState(() {
@@ -32,9 +31,15 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final List<Widget> widgetOptions = <Widget>[
+      AdminHomePage(establishmentId: widget.establishmentId),
+      const AdminDebtSummaryPage(),
+      const AdminProductsPage(),
+      const AdminSettingsPage(),
+    ];
     return Scaffold(
       body: Center(
-        child: _widgetOptions.elementAt(_selectedIndex),
+        child: widgetOptions.elementAt(_selectedIndex),
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[

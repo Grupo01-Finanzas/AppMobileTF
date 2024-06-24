@@ -8,7 +8,8 @@ import 'package:tf/enum/interest_type.dart';
 
 
 class AddClientPage extends StatefulWidget {
-  const AddClientPage({super.key});
+  final int establishmentId;
+  const AddClientPage({super.key, required this.establishmentId});
 
   @override
   AddClientPageState createState() => AddClientPageState();
@@ -53,11 +54,27 @@ class AddClientPageState extends State<AddClientPage> {
       final prefs = await SharedPreferences.getInstance();
       final accessToken = prefs.getString('accessToken');
       final establishmentId = prefs.getInt('establishmentId');
+      final userId = prefs.getInt('userId');
 
-      if (accessToken != null && establishmentId != null) {
+      print('establishmentId: $establishmentId');
+
+      
+
+      if (accessToken != null) {
+        if (_selectedCreditType == CreditType.LONG_TERM &&
+            _gracePeriodController.text.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text('Por favor ingrese el período de gracia')),
+          );
+          if (_gracePeriodController.text.isEmpty) _gracePeriodController.text = '0.0';
+          return;
+        }
+
         try {
           // Call the ClientCubit method to create the client
           await clientCubit.createClient(
+            clientId: userId ?? 0,
             dni: _dniController.text,
             name: _nameController.text,
             address: _addressController.text,
@@ -69,24 +86,26 @@ class AddClientPageState extends State<AddClientPage> {
             interestRate: double.parse(_interestRateController.text),
             interestType: _selectedInterestType,
             creditType: _selectedCreditType,
-            gracePeriod: int.parse(_gracePeriodController.text),
+            gracePeriod: 12,
             lateFeePercentage: double.parse(_lateFeePercentageController.text),
-            establishmentId: establishmentId,
+            establishmentId: establishmentId ?? 0,
             accessToken: accessToken,
           );
 
-          // Navigate back to the client list screen
-          context.pop();
+         
 
           // Show a success message
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Cliente agregado correctamente')),
           );
+          // Navigate back to the previous page
+          context.go('/establishments/${widget.establishmentId}/manageClients');
         } catch (e) {
           // Handle error, maybe show a SnackBar
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Error: ${e.toString()}')),
           );
+          print('Error creating client: ${e.toString()}');
         }
       }
     }
@@ -104,7 +123,67 @@ class AddClientPageState extends State<AddClientPage> {
             // To make the form scrollable
             child: Column(
               children: <Widget>[
-                // ... [Your existing TextFormFields for DNI, name, address, phone, email, password] ...
+                // DNI
+                TextFormField(
+                  controller: _dniController,
+                  decoration: const InputDecoration(labelText: 'DNI'),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor ingrese el DNI';
+                    }
+                    return null;
+                  },
+                ),
+
+                // Name
+                TextFormField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(labelText: 'Nombre'),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor ingrese el nombre';
+                    }
+                    return null;
+                  },
+                ),
+
+                // Address
+                TextFormField(
+                  controller: _addressController,
+                  decoration: const InputDecoration(labelText: 'Dirección'),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor ingrese la dirección';
+                    }
+                    return null;
+                  },
+                ),
+
+                // Phone
+                TextFormField(
+                  controller: _phoneController,
+                  decoration: const InputDecoration(labelText: 'Teléfono'),
+                  keyboardType: TextInputType.phone,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor ingrese el teléfono';
+                    }
+                    return null;
+                  },
+                ),
+
+                // Email
+                TextFormField(
+                  controller: _emailController,
+                  decoration: const InputDecoration(labelText: 'Correo Electrónico'),
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor ingrese el correo electrónico';
+                    }
+                    return null;
+                  },
+                ),
 
                 // Credit Limit
                 TextFormField(
@@ -189,7 +268,7 @@ class AddClientPageState extends State<AddClientPage> {
                   items: CreditType.values.map((creditType) {
                     return DropdownMenuItem(
                       value: creditType,
-                      child: Text(creditType.name), // Display the enum name
+                      child: Text(creditType.name),
                     );
                   }).toList(),
                   onChanged: (value) {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tf/models/api/establishment.dart';
 import 'package:tf/models/api/user.dart';
@@ -110,6 +111,12 @@ class _EstablishmentSettingsPageState
     return Scaffold(
       appBar: AppBar(
         title: const Text('Configuración del Establecimiento'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            context.go('/home');
+          },
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

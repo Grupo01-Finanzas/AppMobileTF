@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tf/cubits/transaction_cubit.dart';
 import 'package:tf/repository/transaction_repository.dart';
 
@@ -55,7 +56,22 @@ class _ManageTransactionsViewState extends State<ManageTransactionsView> {
               },
             );
           } else if (state is TransactionError) {
-            return Center(child: Text('Error: ${state.message}'));
+            return Center(child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('Error: ${state.message}'),
+                ElevatedButton(
+                  onPressed: _fetchTransactions,
+                  child: const Text('Retry'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    GoRouter.of(context).go('/home');
+                  }, 
+                  child: const Text('Go Back')
+                ),
+
+              ]));
           } else {
             return const SizedBox.shrink();
           }

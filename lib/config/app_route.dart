@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tf/cubits/auth_cubit.dart';
+import 'package:tf/cubits/client_cubit.dart';
 import 'package:tf/cubits/establishment_cubit.dart';
 import 'package:tf/models/api/credit_account.dart';
 import 'package:tf/models/api/establishment.dart';
@@ -10,6 +13,7 @@ import 'package:tf/presentation/pages/Admin/add_client_page.dart';
 import 'package:tf/presentation/pages/Admin/add_product_page.dart';
 import 'package:tf/presentation/pages/Admin/admin_clients_page.dart';
 import 'package:tf/presentation/pages/Admin/admin_products_page.dart';
+import 'package:tf/presentation/pages/Admin/change_password_page.dart';
 import 'package:tf/presentation/pages/Admin/edit_admin_profile.dart';
 import 'package:tf/presentation/pages/Admin/establishment_screen.dart';
 import 'package:tf/presentation/pages/Admin/establishment_settings_page.dart';
@@ -27,14 +31,16 @@ import 'package:tf/presentation/pages/admin/admin_debt_summary_page.dart';
 import 'package:tf/presentation/pages/admin/admin_home_screen.dart';
 import 'package:tf/presentation/pages/admin/admin_settings_page.dart';
 import 'package:tf/presentation/pages/admin/edit_establishment_page.dart';
-import 'package:tf/presentation/pages/client/change_password_screen.dart';
 import 'package:tf/presentation/pages/client/client_account_summary_screen.dart';
 import 'package:tf/presentation/pages/client/client_home_screen.dart';
 import 'package:tf/presentation/pages/client/client_installments_screen.dart';
 import 'package:tf/presentation/pages/client/client_transactions_history_screen.dart';
+import 'package:tf/presentation/pages/error_page.dart';
 import 'package:tf/repository/auth_repository.dart';
+import 'package:tf/repository/client_repository.dart';
 import 'package:tf/repository/establishment_repository.dart';
 import 'package:tf/services/api/establishment_service.dart';
+import 'package:http/http.dart' as http;
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -54,17 +60,36 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/home',
       builder: (context, state) {
-        final token = state.extra as Map<String, dynamic>?;
-        if (token != null) {
-          return BlocProvider(
-            create: (context) => AuthCubit(
-              authRepository: context.read<AuthRepository>(),
-            ),
-            child: HomeScreen(token: token),
-          );
-        } else {
-          return const LoginScreen();
-        }
+        return FutureBuilder<String?>(
+          future: SharedPreferences.getInstance()
+              .then((prefs) => prefs.getString('accessToken')),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              // Display a loading indicator while fetching the token
+              return const CircularProgressIndicator();
+            } else if (snapshot.hasData) {
+              final token = snapshot.data;
+              if (token != null && token.isNotEmpty) {
+                // Token is present and not empty
+                return BlocProvider(
+                  create: (context) => AuthCubit(
+                    authRepository: context.read<AuthRepository>(),
+                  ),
+                  child: HomeScreen(token: token),
+                );
+              } else {
+                // Token is null or empty
+                return const LoginScreen();
+              }
+            } else if (snapshot.hasError) {
+              // Handle error while fetching token
+              return Text('Error: ${snapshot.error}');
+            } else {
+              // This should never happen if the future completes with data
+              return const Text('Something went wrong');
+            }
+          },
+        );
       },
     ),
     GoRoute(
@@ -75,22 +100,65 @@ final appRouter = GoRouter(
           create: (context) => EstablishmentCubit(
             establishmentRepository: context.read<EstablishmentRepository>(),
           ),
-          child: EstablishmentScreen(establishmentId: establishmentId),
+          child: FutureBuilder<void>(
+            future: _saveEstablishmentIdToSharedPreferences(
+                context.read<EstablishmentRepository>()),
+            builder: (context, snapshot) {
+              // You can show a loading indicator or handle errors here if needed
+              return EstablishmentScreen(establishmentId: establishmentId);
+            },
+          ),
         );
       },
       routes: [
         GoRoute(
-          path: 'admin', // Note: No leading slash for nested routes
+          path: 'admin',
           builder: (context, state) {
             final establishmentId =
                 int.tryParse(state.pathParameters['id']!) ?? 0;
+
             return BlocProvider(
               create: (context) => AuthCubit(
                 authRepository: context.read<AuthRepository>(),
               ),
-              child: AdminHomeScreen(establishmentId: establishmentId),
+              child: FutureBuilder<void>(
+                future:
+                    _saveEstablishmentIdToSharedPreferences(context.read<EstablishmentRepository>()),
+                builder: (context, snapshot) {
+                  // You can show a loading indicator or handle errors here if needed
+                  return AdminHomeScreen(establishmentId: establishmentId);
+                },
+              ),
             );
           },
+        ),
+        GoRoute(
+          path: 'manageClients',
+          builder: (context, state) {
+            final establishmentId =
+                int.tryParse(state.pathParameters['id']!) ?? 0;
+
+            return BlocProvider(
+              create: (context) => ClientCubit(
+                clientRepository: context.read<ClientRepository>(),
+              ),
+              child: ManageClientsPage(
+                establishmentId: establishmentId,
+              ),
+            );
+          },
+          routes: [
+            GoRoute(
+                path: 'add',
+                builder: (context, state) {
+                  final establishmentId =
+                      int.tryParse(state.pathParameters['id']!) ?? 0;
+                      print('Establishment ID: $establishmentId');
+
+                      return BlocProvider(create: (context) => ClientCubit(clientRepository: context.read<ClientRepository>()), child: AddClientPage(establishmentId: establishmentId));
+                } 
+                ),
+          ],
         ),
       ],
     ),
@@ -143,24 +211,6 @@ final appRouter = GoRouter(
       builder: (context, state) => const ManageTransactionsPage(),
     ),
     GoRoute(
-      path: '/manageClients',
-      builder: (context, state) => const ManageClientsPage(),
-      routes: [
-        GoRoute(
-          path: 'add',
-          builder: (context, state) => const AddClientPage(),
-        ),
-      ],
-    ),
-    GoRoute(
-      path: '/interestRateSettings',
-      builder: (context, state) {
-        // Retrieve the creditAccount from the extra argument
-        final creditAccount = state.extra as CreditAccount;
-        return InterestRateSettingsPage(creditAccount: creditAccount);
-      },
-    ),
-    GoRoute(
       path: '/establishmentSettings',
       builder: (context, state) => const EstablishmentSettingsPage(),
     ),
@@ -180,6 +230,23 @@ final appRouter = GoRouter(
       path: '/admin/credit-accounts',
       builder: (context, state) {
         return const AdminCreditAccountsScreen();
+      },
+    ),
+    GoRoute(
+      path: '/interestRateSettings',
+      builder: (context, state) {
+        final creditAccount = state.extra as CreditAccount?;
+        if (creditAccount == null) {
+          return const ErrorPage(message: 'Credit account not found');
+        }
+        return InterestRateSettingsPage(creditAccount: creditAccount);
+      },
+    ),
+    GoRoute(
+      path: '/editEstablishment',
+      builder: (context, state) {
+        final establishment = state.extra as Establishment?;
+        return EditEstablishmentPage(establishment: establishment!);
       },
     ),
     GoRoute(
@@ -239,12 +306,14 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/changePassword',
       builder: (context, state) {
-        return const ChangePasswordScreen();
+        return const ChangePasswordPage();
       },
     ),
-    GoRoute(path: '/editAdminProfile', builder: (context, state) {
-      return const EditAdminProfilePage();
-    }),
+    GoRoute(
+        path: '/editAdminProfile',
+        builder: (context, state) {
+          return const EditAdminProfilePage();
+        }),
     GoRoute(
       path: '/clientTransactions',
       builder: (context, state) {
@@ -292,4 +361,43 @@ Future<Establishment?> _fetchEstablishmentData() async {
   } else {
     return null;
   }
+}
+
+Future<CreditAccount> fetchCreditAccount(String id) async {
+  final response = await http.get(Uri.parse(
+      'https://si642-2401-ss82-group1-tf-production.up.railway.app/api/v1/credit-accounts/$id'));
+
+  if (response.statusCode == 200) {
+    final jsonData = jsonDecode(response.body);
+    return CreditAccount(
+      id: jsonData['id'],
+      interestRate: jsonData['interestRate'],
+      creditLimit: jsonData['creditLimit'],
+      client: jsonData['client'],
+      clientID: jsonData['clientID'],
+      establishmentID: jsonData['establishmentID'],
+      establishment: jsonData['establishment'],
+      currentBalance: jsonData['currentBalance'],
+      monthlyDueDate: jsonData['monthlyDueDate'],
+      interestType: jsonData['interestType'],
+      creditType: jsonData['creditType'],
+      gracePeriod: jsonData['gracePeriod'],
+      isBlocked: jsonData['isBlocked'],
+      lastInterestAccrualDate: jsonData['lastInterestAccrualDate'],
+      lateFeePercentage: jsonData['lateFeePercentage'],
+    );
+  } else {
+    throw Exception('Failed to fetch credit account');
+  }
+}
+
+Future<void> _saveEstablishmentIdToSharedPreferences(
+    EstablishmentRepository establishmentRepository) async {
+  
+  final prefs = await SharedPreferences.getInstance();
+  final accessToken = prefs.getString('accessToken') ?? '';
+  final userId = prefs.getInt('userId') ?? 0;
+  final establishment = await establishmentRepository.getEstablishmentByAdminId(userId, accessToken);
+  final establishmentId = establishment!.id;
+  await prefs.setInt('establishmentId', establishmentId);
 }

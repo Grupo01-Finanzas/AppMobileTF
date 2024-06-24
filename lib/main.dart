@@ -3,11 +3,22 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tf/config/app_route.dart';
+import 'package:tf/cubits/account_summary_cubit.dart';
 import 'package:tf/cubits/auth_cubit.dart';
 import 'package:tf/cubits/change_password_cubit.dart';
+import 'package:tf/cubits/client_cubit.dart';
 import 'package:tf/cubits/establishment_cubit.dart';
+import 'package:tf/cubits/installment_cubit.dart';
+import 'package:tf/cubits/pay_debt_cubit.dart';
+import 'package:tf/cubits/purchase_cubit.dart';
+import 'package:tf/cubits/transaction_cubit.dart';
+import 'package:tf/repository/account_summary_repository.dart';
 import 'package:tf/repository/auth_repository.dart';
+import 'package:tf/repository/client_repository.dart';
 import 'package:tf/repository/establishment_repository.dart';
+import 'package:tf/repository/installment_repository.dart';
+import 'package:tf/repository/purchase_repository.dart';
+import 'package:tf/repository/transaction_repository.dart';
 import 'package:tf/services/api/credit_account_service.dart';
 import 'package:tf/services/api/establishment_service.dart';
 import 'package:tf/services/api/product_service.dart';
@@ -36,7 +47,11 @@ void main() async {
       Provider<EstablishmentService>(
           create: (context) => EstablishmentService()),
       Provider<ProductService>(create: (context) => ProductService()),
-      
+      Provider(create: (context) => AccountSummaryRepository()),
+      Provider(create: (context) => ClientRepository()),
+      Provider(create: (context) => InstallmentRepository()),
+      Provider(create: (context) => TransactionRepository()),
+      Provider(create: (context) => PurchaseRepository()),
       BlocProvider(
         create: (context) => AuthCubit(
           authRepository: context.read<AuthRepository>(),
@@ -47,6 +62,18 @@ void main() async {
                 establishmentRepository:
                     context.read<EstablishmentRepository>(),
               )),
+      BlocProvider(create: (context) => AccountSummaryCubit(accountSummaryRepository: context.read<AccountSummaryRepository>())),
+
+      BlocProvider(create: (context) => ClientCubit(clientRepository: context.read<ClientRepository>())),
+
+      BlocProvider(create: (context) => InstallmentCubit(installmentRepository: context.read<InstallmentRepository>())),
+
+      BlocProvider(create: (context) => PayDebtCubit(transactionRepository: context.read<TransactionRepository>())),
+
+      BlocProvider(create: (context) => PurchaseCubit(purchaseRepository: context.read<PurchaseRepository>())),
+
+      BlocProvider(create: (context) => TransactionCubit(transactionRepository: context.read<TransactionRepository>())),
+
       BlocProvider(
           create: (context) =>
               ChangePasswordCubit(userService: context.read<UserService>())),

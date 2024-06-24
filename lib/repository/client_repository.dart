@@ -1,6 +1,7 @@
 
 import 'dart:convert';
 
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tf/models/api/user.dart';
 import 'package:tf/services/api/user_service.dart';
 import 'package:http/http.dart' as http;
@@ -23,7 +24,15 @@ class ClientRepository {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body) as List<dynamic>;
-        return data.map((item) => User.fromJson(item)).toList();
+        final clients = data.map((item) => User.fromJson(item)).toList();
+
+        // Store the establishment ID in SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('establishmentId', establishmentId);
+        print('Establishment ID: $establishmentId');
+        print('Clients: $clients');
+
+        return clients; 
       } else {
         throw Exception(
             'Failed to get clients by establishment ID: ${response.statusCode}');
@@ -35,6 +44,7 @@ class ClientRepository {
   }
 
    Future<void> createClient({
+    required int clientId,
     required String dni,
     required String name,
     required String address,
@@ -63,7 +73,7 @@ class ClientRepository {
         interestType: interestType,
         creditType: creditType,
         accessToken: accessToken,
-        establishmentID: establishmentId,
+        establishmentID: establishmentId, email: email, lateFeePercentage: lateFeePercentage,
       );
     } catch (e) {
       print("Error creating client: $e");

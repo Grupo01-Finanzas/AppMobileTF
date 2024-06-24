@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tf/services/api/admin_service.dart'; 
 import 'package:tf/services/api/user_service.dart';
@@ -78,6 +79,12 @@ class _EditAdminProfilePageState extends State<EditAdminProfilePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Editar Perfil'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            context.go('/home');
+          },
+        ),
       ),
       body: Form(
         key: _formKey,

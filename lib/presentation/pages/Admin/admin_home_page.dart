@@ -8,7 +8,8 @@ import 'package:tf/services/api/credit_account_service.dart';
 import 'package:tf/services/api/user_service.dart';
 
 class AdminHomePage extends StatefulWidget {
-  const AdminHomePage({super.key});
+  final int establishmentId;
+  const AdminHomePage({super.key, required this.establishmentId});
 
   @override
   State<AdminHomePage> createState() => _AdminHomePageState();
@@ -98,7 +99,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
                   icon: Icons.people,
                   title: 'Administrar Clientes',
                   onTap: () {
-                    context.go('manageClients');
+                    context.go('/establishments/${widget.establishmentId}/manageClients');
                   },
                 ),
                 _buildGridItem(

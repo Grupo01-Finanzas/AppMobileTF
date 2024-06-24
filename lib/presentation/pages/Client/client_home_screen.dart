@@ -1,51 +1,42 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:tf/cubits/auth_cubit.dart';
 import 'package:tf/presentation/pages/Client/client_account_summary_screen.dart';
 import 'package:tf/presentation/pages/Client/client_home_page.dart';
 import 'package:tf/presentation/pages/Client/client_purchase_screen.dart';
 import 'package:tf/presentation/pages/Principal/settings.page.dart';
 import 'package:tf/presentation/widgets/client/bottom_nav_bar.dart';
-import 'package:tf/presentation/widgets/client/floating_change_password_dialog.dart';
-import 'package:tf/services/api/user_service.dart';
+
 
 class ClientHomeScreen extends StatefulWidget {
-  final Map<String, dynamic> token;
+  final int establishmentId;
+  final String baseUrl =
+      'https://si642-2401-ss82-group1-tf-production.up.railway.app/api/v1';
 
-  const ClientHomeScreen({super.key, required this.token});
+  const ClientHomeScreen({super.key, required this.establishmentId});
 
   @override
-  State<ClientHomeScreen> createState() => _ClientHomeScreenState();
+  State<ClientHomeScreen> createState() => _AdminHomeScreenState();
 }
 
-class _ClientHomeScreenState extends State<ClientHomeScreen> {
+class _AdminHomeScreenState extends State<ClientHomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+  }
+
   int _selectedIndex = 0;
 
-  final List<Widget> _screens = [
-    const ClientHomePage(),
-    const ClientPurchaseScreen(),
-    const ClientAccountSummaryScreen(),
-    const SettingsPage(),
-  ];
 
   @override
   Widget build(BuildContext context) {
-
-    final needsPasswordUpdate = context.read<AuthCubit>().state is AuthLoginSuccess &&
-        context.read<UserService>().needsPasswordUpdate(widget.token); 
-
+    final List<Widget> widgetOptions = <Widget>[
+      const ClientHomePage(),
+      const ClientPurchaseScreen(),
+      const ClientAccountSummaryScreen(),
+      const SettingsPage(),
+    ];
     return Scaffold(
-      body: Stack(
-        children: [
-          _screens[_selectedIndex],
-          if (needsPasswordUpdate) FloatingChangePasswordDialog(
-            onPasswordUpdated: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Contraseña actualizada correctamente')),
-              );
-            },
-          ),
-        ],
+      body: Center(
+        child: widgetOptions.elementAt(_selectedIndex),
       ),
       bottomNavigationBar: BottomNavBar(
         selectedIndex: _selectedIndex,

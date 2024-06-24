@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tf/models/api/credit_account.dart';
 import 'package:tf/models/api/establishment.dart';
 import 'package:tf/models/api/user.dart';
-import 'package:tf/presentation/pages/Admin/edit_establishment_page.dart';
 import 'package:tf/services/api/credit_account_service.dart';
 import 'package:tf/services/api/establishment_service.dart';
 import 'package:tf/services/api/user_service.dart';
@@ -66,7 +65,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage> {
     await prefs.clear(); 
 
     // Navigate to the login page
-    context.go('/login');
+    context.go('/');
   }
 
   Future<void> _loadEstablishmentData() async {
@@ -109,13 +108,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage> {
                   title: 'Información del Establecimiento',
                   onTap: () {
                     // Navigate to a screen to edit establishment details
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => EditEstablishmentPage(
-                            establishment: _establishment!), // Pass data
-                      ),
-                    );
+                    context.go('/editEstablishment', extra: _establishment);
                   },
                 ),
                 _buildSettingItem(

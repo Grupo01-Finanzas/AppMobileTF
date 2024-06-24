@@ -6,19 +6,23 @@ import 'package:tf/repository/client_repository.dart';
 
 
 class ManageClientsPage extends StatelessWidget {
-  const ManageClientsPage({super.key});
+  
+  final int establishmentId;
+
+  const ManageClientsPage({super.key, required this.establishmentId});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => ClientCubit(clientRepository: context.read<ClientRepository>()),
-      child: const ManageClientsView(), 
+      child: ManageClientsView(establishmentId: establishmentId,), 
     );
   }
 }
 
 class ManageClientsView extends StatefulWidget {
-  const ManageClientsView({super.key});
+  final int establishmentId;
+  const ManageClientsView({super.key, required this.establishmentId});
 
   @override
   State<ManageClientsView> createState() => _ManageClientsViewState();
@@ -58,7 +62,22 @@ class _ManageClientsViewState extends State<ManageClientsView> {
               },
             );
           } else if (state is ClientError) {
-            return Center(child: Text('Error: ${state.message}'));
+            return Center(child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('Error: ${state.message}'),
+                ElevatedButton(
+                  onPressed: _fetchClients,
+                  child: const Text('Retry'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    GoRouter.of(context).go('/home');
+                  }, 
+                  child: const Text('Go Back')
+                ),
+
+              ]));
           } else {
             return const SizedBox.shrink();
           }
@@ -66,7 +85,7 @@ class _ManageClientsViewState extends State<ManageClientsView> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          context.push('/manageClients/add');
+          context.push('/establishments/${widget.establishmentId}/manageClients/add');
         },
         child: const Icon(Icons.add),
       ),

@@ -7,14 +7,18 @@ class UserService {
   final String baseUrl = 'https://si642-2401-ss82-group1-tf-production.up.railway.app/api/v1';
 
   Future<Map<String, dynamic>> createClient(
-      {required String dni,
+      {
+       required String dni,
+       double gracePeriod = 0.0,
       required String name,
       required String address,
+      required String email,
       required String phone,
       required double creditLimit,
       required int monthlyDueDate,
       required double interestRate,
       required String interestType,
+      required double lateFeePercentage,
       required String creditType,
       required String accessToken,
       required int establishmentID}) async {
@@ -24,12 +28,15 @@ class UserService {
       'dni': dni,
       'name': name,
       'address': address,
+      'email': email,
       'phone': phone,
+      'late_fee_percentage': lateFeePercentage,
       'credit_limit': creditLimit,
       'monthly_due_date': monthlyDueDate,
       'interest_rate': interestRate,
       'interest_type': interestType,
       'credit_type': creditType,
+      'grace_period': gracePeriod,
     });
 
     final response = await http.post(url, body: body, headers: {
@@ -38,6 +45,7 @@ class UserService {
     });
 
     if (response.statusCode == 201) {
+      print(jsonDecode(response.body));
       return jsonDecode(response.body);
     } else {
       throw Exception('Failed to create client: ${response.statusCode}');
@@ -167,7 +175,6 @@ class UserService {
 
 
   bool needsPasswordUpdate(Map<String, dynamic> token) {
-    // Check if the user's DNI is the same as their password
     final user = User.fromJson(token['user']);
     return user.dni == user.password;
   }

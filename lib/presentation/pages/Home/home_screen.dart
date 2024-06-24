@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:tf/services/api/user_service.dart';
 
 class HomeScreen extends StatefulWidget {
-  final Map<String, dynamic> token;
+  final String token;
 
   const HomeScreen({super.key, required this.token});
 
@@ -19,7 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
     // Fetch the current user's information
     context
         .read<UserService>()
-        .getCurrentUser(accessToken: widget.token['access_token'])
+        .getCurrentUser(accessToken: widget.token)
         .then((currentUser) {
       // Check the role and navigate to the appropriate home screen
       print(currentUser);
