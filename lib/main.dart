@@ -1,74 +1,75 @@
 import 'package:flutter/material.dart';
-import 'package:tf/presentation/pages/Principal/crear_credito.page.dart';
-//import 'package:provider/provider.dart';
-//import 'package:tf/config/AuthState.dart';
-import 'package:tf/presentation/pages/Principal/cuenta_tarjeta.page.dart';
-import 'package:tf/presentation/pages/Auth/login.page.dart';
-import 'package:tf/presentation/pages/Principal/historial.page.dart';
-import 'package:tf/presentation/pages/principal_manage.page.dart';
-import 'package:tf/presentation/pages/Auth/register.page.dart';
-import 'package:tf/presentation/pages/Search/crear.page.dart';
-import 'package:tf/presentation/pages/Search/search.page.dart';
-import 'package:tf/presentation/pages/Search/solicitar.page.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tf/config/app_route.dart';
+import 'package:tf/cubits/auth_cubit.dart';
+import 'package:tf/cubits/change_password_cubit.dart';
+import 'package:tf/cubits/establishment_cubit.dart';
+import 'package:tf/repository/auth_repository.dart';
+import 'package:tf/repository/establishment_repository.dart';
+import 'package:tf/services/api/credit_account_service.dart';
+import 'package:tf/services/api/establishment_service.dart';
+import 'package:tf/services/api/product_service.dart';
+import 'package:tf/services/api/user_service.dart';
 
-void main() {
-  /*ChangeNotifierProvider(
-    create: (context)=>AuthState(),
-    child: MyApp()
-  );*/
-  return runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Check if a user is logged in
+  final prefs = await SharedPreferences.getInstance();
+  final accessToken = prefs.getString('accessToken');
+
+  return runApp(
+    MultiBlocProvider(providers: [
+      Provider<AuthRepository>(
+        create: (context) => AuthRepository(),
+      ),
+      Provider<EstablishmentRepository>(
+        create: (context) => EstablishmentRepository(),
+      ),
+      Provider<CreditAccountService>(
+          create: (context) => CreditAccountService()),
+      Provider<UserService>(
+        create: (context) => UserService(),
+      ),
+      Provider<EstablishmentService>(
+          create: (context) => EstablishmentService()),
+      Provider<ProductService>(create: (context) => ProductService()),
+      
+      BlocProvider(
+        create: (context) => AuthCubit(
+          authRepository: context.read<AuthRepository>(),
+        ),
+      ),
+      BlocProvider(
+          create: (context) => EstablishmentCubit(
+                establishmentRepository:
+                    context.read<EstablishmentRepository>(),
+              )),
+      BlocProvider(
+          create: (context) =>
+              ChangePasswordCubit(userService: context.read<UserService>())),
+    ], child: MyApp(
+      initialLocation: accessToken != null ? '/home' : '/',
+    )),
+  );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final String initialLocation;
+  const MyApp({super.key, required this.initialLocation});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'Trabajo Final',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      onGenerateRoute: (settings) {
-        if (settings.name == '/search/crear') {
-          // Aquí puedes obtener el ID del settings.arguments si lo necesitas
-          //final id = (settings.arguments as String).split('/')[1];
-          final args = settings.arguments as Map<String, dynamic>;
-
-          final id = args["id"];
-          final isBusiness = args["isBusiness"];
-          // Retornar la pantalla que corresponde a '/search/crear'
-          return MaterialPageRoute(
-            builder: (_) => CrearPage(id: id,isBusiness:isBusiness ,), // Aquí deberías retornar tu widget apropiado
-            settings: settings,
-          );
-        }
-
-        // Si la ruta no está definida aquí, puedes retornar null o una ruta de error
-        return null;
-      },
-      routes: {
-        '/': (context) => const PrincipalManagePage(),
-        '/login': (context) => const LoginPage(),
-        '/register': (context) => const RegisterPage(),
-        '/principal': (context) => const PrincipalManagePage(),
-        '/principal/cuenta': (context) => const CuentaTarjetaPage(),
-
-        '/search': (context) => const SearchPage(),
-        '/search/solicitar' : (context)=> const SolicitarPage(),
-        '/historial':(context) => const HistorialPage(),
-
-        'principal/crear-credito':(context) => const CrearCreditoPage()
-        //'/search/crear/:id':(context) => CrearPage()
-      },
-      //initialRoute: '/login',
-      //home: PrincipalPage()
-      //home: PrincipalManagePage(),
-      //initialRoute: '/search/solicitar',
-      initialRoute: '/principal',
+      routerConfig: appRouter,
     );
-    //return MySample();
   }
 }

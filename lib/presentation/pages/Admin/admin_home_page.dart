@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:tf/models/credit_request.dart';
-import 'package:tf/services/admin_service.dart';
-import 'package:tf/services/authentication_service.dart';
-import 'package:tf/services/client_service.dart';
-import 'package:tf/services/credit_request_service.dart';
-
+import 'package:go_router/go_router.dart';
+import 'package:tf/models/api/credit_account.dart';
+import 'package:tf/models/api/user.dart'; 
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tf/services/api/credit_account_service.dart';
+import 'package:tf/services/api/user_service.dart';
 
 class AdminHomePage extends StatefulWidget {
   const AdminHomePage({super.key});
@@ -15,114 +15,111 @@ class AdminHomePage extends StatefulWidget {
 }
 
 class _AdminHomePageState extends State<AdminHomePage> {
-  int _pendingCreditRequestCount = 0;
-  List<CreditRequest> _pendingCreditRequests = [];
+  User? _currentUser; 
+  CreditAccount? _creditAccount;
 
   @override
   void initState() {
     super.initState();
-    _loadPendingCreditRequests();
+    _loadUserData();
   }
 
-  Future<void> _loadPendingCreditRequests() async {
-    final creditRequestService = context.read<CreditRequestService>();
-    final adminService = context.read<AdminService>();
-    final authService = context.read<AuthenticationService>();
+  Future<void> _loadUserData() async {
+    final userService = context.read<UserService>();
+    final creditAccountService = context.read<CreditAccountService>();
+    final prefs = await SharedPreferences.getInstance();
+    final accessToken = prefs.getString('accessToken');
+    final userId = prefs.getInt('userId');
 
-    final user = await authService.getCurrentUser();
-    if (user != null) {
-      final admin = await adminService.getAdmin(user.id);
-      if (admin != null) {
-        final establishmentId = admin.establishmentId;
-        final pendingRequests = await creditRequestService
-            .getPendingCreditRequestsByEstablishmentId(establishmentId);
+    if (accessToken != null && userId != null) {
+      try {
+        final user =
+            await userService.getUserByIdU(userId, accessToken);
         setState(() {
-          _pendingCreditRequests = pendingRequests;
-          _pendingCreditRequestCount = pendingRequests.length;
+          _currentUser = user;
         });
+
+        // Fetch credit account after getting the user
+        if (_currentUser != null) {
+          final creditAccount = await creditAccountService
+              .getCreditAccountByClientId(_currentUser!.id!, accessToken);
+          setState(() {
+            _creditAccount = creditAccount;
+          });
+        }
+      } catch (e) {
+        print("Error fetching user or credit account data: $e");
+        
       }
     }
   }
 
-  
-
   @override
   Widget build(BuildContext context) {
-
-
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: GestureDetector(
-            onTap: () async {
-              final clientService = context.read<ClientService>();
-              for (var request in _pendingCreditRequests) {
-                final client = await clientService.getClientById(request.clientId);
-                final clientName = client.user?.name ?? 'Unknown';
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Solicitud de crédito de $clientName por ${request.requestedCreditLimit} soles',
-                    ),
-                  ),
-                );
-              }
-            },
-            child: Row(
+    return Scaffold(
+      appBar: AppBar(
+        leading: _currentUser != null
+            ? CircleAvatar(
+                backgroundImage: NetworkImage(_currentUser!.photoUrl != null
+                    ? _currentUser!.photoUrl!
+                    : 'https://via.placeholder.com/150'),
+                radius: 20,
+              )
+            : const CircularProgressIndicator(),
+        title: _currentUser != null
+            ? Text(
+                _currentUser!.name != null ? _currentUser!.name! : 'Usuario',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              )
+            : const Text('Cargando...'),
+        backgroundColor: Colors.blue,
+        elevation: 0,
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: GridView.count(
+              crossAxisCount: 2,
+              padding: const EdgeInsets.all(16.0),
+              mainAxisSpacing: 16.0,
+              crossAxisSpacing: 16.0,
               children: [
-                const Icon(Icons.notifications, color: Colors.orange),
-                const SizedBox(width: 8.0),
-                Text(
-                  'Solicitudes de crédito pendientes: $_pendingCreditRequestCount',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                _buildGridItem(
+                  icon: Icons.account_balance_wallet,
+                  title: 'Administrar Transactions',
+                  onTap: () {
+                    context.go('/manageTransactions');
+                  },
+                ),
+                _buildGridItem(
+                  icon: Icons.people,
+                  title: 'Administrar Clientes',
+                  onTap: () {
+                    context.go('manageClients');
+                  },
+                ),
+                _buildGridItem(
+                  icon: Icons.shopping_cart,
+                  title: 'Configurar Tasa de Interés',
+                  onTap: () {
+                   context.go('/interestRateSettings', extra: _creditAccount);
+                  },
+                ),
+                _buildGridItem(
+                  icon: Icons.settings,
+                  title: 'Configuración del Establecimiento',
+                  onTap: () {
+                    context.go('/establishmentSettings');
+                  },
                 ),
               ],
             ),
           ),
-        ),
-        Expanded(
-          child: GridView.count(
-            crossAxisCount: 2,
-            padding: const EdgeInsets.all(16.0),
-            mainAxisSpacing: 16.0,
-            crossAxisSpacing: 16.0,
-            children: [
-              _buildGridItem(
-                icon: Icons.account_balance_wallet,
-                title: 'Administrar Cuentas de Crédito',
-                onTap: () {
-                  Navigator.of(context).pushNamed('/manageCreditAccounts');
-                },
-              ),
-              _buildGridItem(
-                icon: Icons.people,
-                title: 'Administrar Clientes',
-                onTap: () {
-                  Navigator.of(context).pushNamed('/manageClients');
-                },
-              ),
-              _buildGridItem(
-                icon: Icons.shopping_cart,
-                title: 'Administrar Productos',
-                onTap: () {
-                  Navigator.of(context).pushNamed('/manageProducts');
-                },
-              ),
-              _buildGridItem(
-                icon: Icons.settings,
-                title: 'Configuración del Establecimiento',
-                onTap: () {
-                  Navigator.of(context).pushNamed('/establishmentSettings');
-                },
-              ),
-            ],
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:tf/presentation/pages/Admin/admin_debt_summary_page.dart';
 import 'package:tf/presentation/pages/Admin/admin_home_page.dart';
-import 'package:tf/presentation/pages/Admin/admin_notifications_page.dart';
-import 'package:tf/presentation/pages/Admin/admin_profile_page.dart';
-import 'package:tf/presentation/pages/Admin/admin_reports_page.dart';
+import 'package:tf/presentation/pages/Admin/admin_products_page.dart';
+import 'package:tf/presentation/pages/Admin/admin_settings_page.dart';
 
 
 class AdminHomeScreen extends StatefulWidget {
@@ -19,9 +19,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
   static const List<Widget> _widgetOptions = <Widget>[
     AdminHomePage(),
-    AdminNotificationsPage(),
-    AdminReportsPage(),
-    AdminProfilePage(),
+    AdminDebtSummaryPage(),
+    AdminProductsPage(),
+    AdminSettingsPage(),
   ];
 
   void _onItemTapped(int index) {
@@ -33,9 +33,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Admin Home'),
-      ),
       body: Center(
         child: _widgetOptions.elementAt(_selectedIndex),
       ),
@@ -46,16 +43,16 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
-            label: 'Notificaciones',
+            icon: Icon(Icons.summarize),
+            label: 'Deudas',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart),
-            label: 'Reportes',
+            icon: Icon(Icons.shopping_basket),
+            label: 'Productos',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Perfil',
+            icon: Icon(Icons.settings),
+            label: 'Settings',
           ),
         ],
         currentIndex: _selectedIndex,
